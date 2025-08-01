@@ -1,5 +1,6 @@
 import './globals.css'
 import Navigation from '../components/Navigation'
+import AISidebar from '../components/AISidebar'
 import { AuthProvider } from '../contexts/AuthContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
@@ -25,9 +26,10 @@ export default function RootLayout({ children }) {
           <AuthProvider>
             <Navigation />
             {children}
+            <AISidebar />
           </AuthProvider>
         </GoogleOAuthProvider>
       </body>
     </html>
   )
-} 
+}

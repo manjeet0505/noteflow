@@ -6,15 +6,13 @@ export default function NoteCard({ note, onDeleteNote }) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      setIsDeleting(true)
-      try {
-        await onDeleteNote(note._id)
-      } catch (error) {
-        console.error('Error deleting note:', error)
-      } finally {
-        setIsDeleting(false)
-      }
+    setIsDeleting(true)
+    try {
+      await onDeleteNote(note._id)
+    } catch (error) {
+      console.error('Error deleting note:', error)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
