@@ -3,7 +3,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export async function POST(request) {
   try {
-    const { action, content, language, message } = await request.json();
+    const { action, content, language, message, context } = await request.json();
+    
+    // Handle both 'content' and 'message' parameters for compatibility
+    const textContent = content || message;
 
     if (!action) {
       return NextResponse.json(
@@ -30,39 +33,38 @@ export async function POST(request) {
 
     switch (action) {
       case 'rewrite':
-        if (!content || content.trim().length < 10) {
+        if (!textContent || textContent.trim().length < 10) {
           return NextResponse.json(
             { success: false, message: 'Please provide content to rewrite (minimum 10 characters).' },
             { status: 400 }
           );
         }
-        prompt = `Rewrite the following text to make it clearer, more engaging, and better structured while maintaining the original meaning:\n\n${content}`;
+        prompt = `Rewrite the following text to make it clearer, more engaging, and better structured while maintaining the original meaning:\n\n${textContent}`;
         break;
 
       case 'translate':
-        if (!content || content.trim().length < 5) {
+        if (!textContent || textContent.trim().length < 5) {
           return NextResponse.json(
             { success: false, message: 'Please provide content to translate (minimum 5 characters).' },
             { status: 400 }
           );
         }
+        // If no language specified, auto-detect and suggest appropriate language
         if (!language) {
-          return NextResponse.json(
-            { success: false, message: 'Please specify the target language for translation.' },
-            { status: 400 }
-          );
+          prompt = `Analyze the following text and translate it to the most appropriate language (English if it's in another language, or a commonly requested language if it's already in English). Provide only the translated text:\n\n${textContent}`;
+        } else {
+          prompt = `Translate the following text to ${language}. Only return the translated text:\n\n${textContent}`;
         }
-        prompt = `Translate the following text to ${language}. Only return the translated text:\n\n${content}`;
         break;
 
       case 'improve':
-        if (!content || content.trim().length < 10) {
+        if (!textContent || textContent.trim().length < 10) {
           return NextResponse.json(
             { success: false, message: 'Please provide content to improve (minimum 10 characters).' },
             { status: 400 }
           );
         }
-        prompt = `Analyze the following text and provide specific suggestions for improvement in terms of clarity, structure, grammar, and engagement. Format your response as bullet points:\n\n${content}`;
+        prompt = `Improve the following text by making it clearer, more engaging, and better structured. Provide the improved version:\n\n${textContent}`;
         break;
 
       case 'chat':

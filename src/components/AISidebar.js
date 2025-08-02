@@ -8,7 +8,7 @@ export default function AISidebar() {
     {
       id: 1,
       type: 'assistant',
-      content: 'Hi! I\'m your AI assistant. I can help you rewrite notes, translate them, suggest improvements, and more!'
+      content: 'Hi! I\'m your writing assistant. I can help guide you on how to use this website and provide tips for writing better notes on any topic. Ask me anything!'
     }
   ])
   const [inputMessage, setInputMessage] = useState('')
@@ -18,31 +18,19 @@ export default function AISidebar() {
     setIsOpen(!isOpen)
   }
 
-  const handleQuickAction = (action) => {
-    if (action === 'voice') {
-      // TODO: Implement voice-to-text functionality
-      const voiceMessage = {
-        id: Date.now(),
-        type: 'assistant',
-        content: 'Voice-to-text feature coming soon! 🎙️'
-      }
-      setMessages(prev => [...prev, voiceMessage])
-      return
+  const handleQuickTip = (topic) => {
+    const tipMessages = {
+      'getting-started': 'Welcome to your notes app! Here\'s how to get started:\n\n1. Click "Create New Note" to start writing\n2. Use the voice input button 🎙️ to dictate your notes\n3. Try the AI writing tools (Rewrite, Translate, Improve) to enhance your content\n4. Use the Summarize feature to get quick summaries\n\nWhat would you like to know more about?',
+      'better-notes': 'Here are tips for writing better notes:\n\n📝 **Structure**: Use clear headings and bullet points\n🎯 **Be Specific**: Include dates, names, and key details\n💡 **Use Keywords**: Highlight important terms\n🔗 **Connect Ideas**: Link related concepts\n📱 **Regular Review**: Revisit and update your notes\n\nWhat type of notes are you planning to write?',
+      'study-tips': 'Effective study note techniques:\n\n🧠 **Active Recall**: Write summaries without looking\n📊 **Mind Maps**: Create visual connections\n⏰ **Spaced Repetition**: Review at intervals\n❓ **Question Method**: Turn notes into questions\n🎨 **Visual Aids**: Add diagrams and charts\n\nWhich subject are you studying?'
     }
 
-    // For other actions, prompt user for content
-    const actionMessages = {
-      rewrite: 'I can help you rewrite your text! Please paste the content you\'d like me to rewrite.',
-      translate: 'I can translate your text! Please paste the content and tell me which language you\'d like it translated to.',
-      improve: 'I can suggest improvements for your text! Please paste the content you\'d like me to analyze.'
-    }
-
-    const actionMessage = {
+    const tipMessage = {
       id: Date.now(),
       type: 'assistant',
-      content: actionMessages[action] || 'How can I help you?'
+      content: tipMessages[topic] || 'How can I help you with your note-taking?'
     }
-    setMessages(prev => [...prev, actionMessage])
+    setMessages(prev => [...prev, tipMessage])
   }
 
   const handleSendMessage = async (e) => {
@@ -133,39 +121,33 @@ export default function AISidebar() {
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">AI Assistant</h2>
-              <p className="text-white/70 text-sm">Your smart writing companion</p>
+              <h2 className="text-lg font-bold text-white">Writing Assistant</h2>
+              <p className="text-white/70 text-sm">Your guide to better note-taking</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Tips */}
         <div className="p-4 border-b border-white/20">
-          <h3 className="text-white font-medium mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-2">
+          <h3 className="text-white font-medium mb-3">Quick Tips</h3>
+          <div className="space-y-2">
             <button 
-              onClick={() => handleQuickAction('rewrite')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20"
+              onClick={() => handleQuickTip('getting-started')}
+              className="w-full p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20 text-left"
             >
-              🧠 Rewrite
+              🚀 Getting Started
             </button>
             <button 
-              onClick={() => handleQuickAction('translate')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20"
+              onClick={() => handleQuickTip('better-notes')}
+              className="w-full p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20 text-left"
             >
-              🌍 Translate
+              📝 Better Notes Tips
             </button>
             <button 
-              onClick={() => handleQuickAction('improve')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20"
+              onClick={() => handleQuickTip('study-tips')}
+              className="w-full p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20 text-left"
             >
-              💡 Improve
-            </button>
-            <button 
-              onClick={() => handleQuickAction('voice')}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors border border-white/20"
-            >
-              🎙️ Voice
+              🎓 Study Techniques
             </button>
           </div>
         </div>
@@ -207,7 +189,7 @@ export default function AISidebar() {
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask me anything..."
+              placeholder="Ask for writing tips or guidance..."
               className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/50 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               disabled={isLoading}
             />
