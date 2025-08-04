@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 
-export default function useVoiceToText(onTranscriptChange) {
+export default function useVoiceToText(onTranscriptChange, { silenceTimeoutMs = 5000 } = {}) {
   // onTranscriptChange: function(text, { interim, final })
 
   const [isListening, setIsListening] = useState(false)
@@ -14,6 +14,7 @@ export default function useVoiceToText(onTranscriptChange) {
   const recognitionRef = useRef(null)
   const timeoutRef = useRef(null)
   const finalizedTranscriptRef = useRef('') // Track what has already been appended
+  const lastResultIndexRef = useRef(-1) // Track last processed result index
 
   // Initialize speech recognition
   const initializeRecognition = useCallback(() => {
@@ -44,19 +45,18 @@ export default function useVoiceToText(onTranscriptChange) {
     recognition.onresult = (event) => {
       let newFinal = ''
       let newInterim = ''
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Only process results we haven't seen yet
+      for (let i = Math.max(lastResultIndexRef.current + 1, event.resultIndex); i < event.results.length; i++) {
         const transcriptPart = event.results[i][0].transcript
         if (event.results[i].isFinal) {
           newFinal += transcriptPart
         } else {
           newInterim += transcriptPart
         }
+        lastResultIndexRef.current = i
       }
-
       // Only append new final transcript if it's new
       if (newFinal) {
-        // Prevent duplicate appending by checking if newFinal is already at the end
         if (!finalizedTranscriptRef.current.endsWith(newFinal)) {
           finalizedTranscriptRef.current += newFinal
         }
@@ -79,7 +79,7 @@ export default function useVoiceToText(onTranscriptChange) {
         if (recognitionRef.current && isListening) {
           stopListening()
         }
-      }, 3000)
+      }, silenceTimeoutMs) // Configurable silence timeout
     }
 
     recognition.onerror = (event) => {
@@ -92,8 +92,16 @@ export default function useVoiceToText(onTranscriptChange) {
     }
 
     recognition.onend = () => {
-      setIsListening(false)
-      
+      // Auto-restart if user is still expecting to listen (mobile bug workaround)
+      if (isListening) {
+        try {
+          recognition.start()
+        } catch (err) {
+          setIsListening(false)
+        }
+      } else {
+        setIsListening(false)
+      }
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
@@ -116,6 +124,7 @@ export default function useVoiceToText(onTranscriptChange) {
         setTranscript('')
         setInterimTranscript('')
         finalizedTranscriptRef.current = ''
+        lastResultIndexRef.current = -1
         setError('')
         recognitionRef.current.start()
       }
@@ -132,6 +141,9 @@ export default function useVoiceToText(onTranscriptChange) {
     }
     setIsListening(false)
     setInterimTranscript('')
+    setTranscript('')
+    finalizedTranscriptRef.current = ''
+    lastResultIndexRef.current = -1
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
