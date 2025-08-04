@@ -54,9 +54,12 @@ export default function useVoiceToText(onTranscriptChange) {
         }
       }
 
-      // Only append new final transcript
+      // Only append new final transcript if it's new
       if (newFinal) {
-        finalizedTranscriptRef.current += newFinal
+        // Prevent duplicate appending by checking if newFinal is already at the end
+        if (!finalizedTranscriptRef.current.endsWith(newFinal)) {
+          finalizedTranscriptRef.current += newFinal
+        }
         setTranscript(finalizedTranscriptRef.current)
         setInterimTranscript('')
         if (typeof onTranscriptChange === 'function') {

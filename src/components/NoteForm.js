@@ -354,59 +354,45 @@ export default function NoteForm({ onAddNote }) {
 
         {/* AI Features Section - Always visible when content exists */}
         {content.trim().length >= 10 && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-white">AI Writing Tools</h3>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="mt-8 w-full">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              <span className="inline-block mr-2 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-lg px-2 py-1 text-xs font-bold">⚡</span>
+              AI Writing Tools
+            </h3>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <button
                 type="button"
                 onClick={() => handleAiAction('rewrite')}
                 disabled={isProcessing || !content.trim()}
-                className="flex items-center justify-center space-x-2 p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-white/10 transition-colors w-full sm:w-auto"
               >
-                <span className="text-lg">🧠</span>
-                <span>Rewrite</span>
+                <span className="mr-2">🧠</span> Rewrite
               </button>
-              
               <button
                 type="button"
                 onClick={() => handleAiAction('translate')}
                 disabled={isProcessing || !content.trim()}
-                className="flex items-center justify-center space-x-2 p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-white/10 transition-colors w-full sm:w-auto"
               >
-                <span className="text-lg">🌍</span>
-                <span>Translate</span>
+                <span className="mr-2">🌍</span> Translate
               </button>
-              
               <button
                 type="button"
                 onClick={() => handleAiAction('improve')}
                 disabled={isProcessing || !content.trim()}
-                className="flex items-center justify-center space-x-2 p-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-white/10 transition-colors w-full sm:w-auto"
               >
-                <span className="text-lg">💡</span>
-                <span>Improve</span>
+                <span className="mr-2">💡</span> Improve
               </button>
             </div>
-            
             {isProcessing && (
-              <div className="flex items-center space-x-3 text-white/70 mb-4">
+              <div className="flex items-center space-x-3 text-white/70 mt-4">
                 <div className="spinner w-5 h-5"></div>
                 <span>Processing with AI...</span>
               </div>
             )}
-            
             {aiError && (
-              <div className="bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl backdrop-blur-sm mb-4">
+              <div className="bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl backdrop-blur-sm mt-4">
                 <div className="flex items-center space-x-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -415,9 +401,8 @@ export default function NoteForm({ onAddNote }) {
                 </div>
               </div>
             )}
-            
             {aiResult && (
-              <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 backdrop-blur-sm">
+              <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-4 backdrop-blur-sm mt-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-white font-medium capitalize">{currentAiAction} Result:</h4>
                   <div className="flex items-center space-x-2">
@@ -538,54 +523,38 @@ export default function NoteForm({ onAddNote }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full pulse"></div>
-            <span className="text-white/60 text-sm">Ready to save</span>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={handleSummarize}
-              disabled={isSummarizing || !content.trim() || content.trim().length < 20}
-              className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isSummarizing ? (
-                <>
-                  <div className="spinner w-4 h-4"></div>
-                  <span>Summarizing...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span>Summarize</span>
-                </>
-              )}
-            </button>
-            
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim() || !content.trim()}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="spinner w-4 h-4"></div>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Save Note</span>
-                </>
-              )}
-            </button>
-          </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mt-6 w-full">
+          <button
+            type="button"
+            onClick={handleSummarize}
+            disabled={isSummarizing || !content.trim() || content.trim().length < 20}
+            className="btn-secondary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-white/10 transition-colors w-full sm:w-auto"
+          >
+            {isSummarizing ? (
+              <>
+                <div className="spinner w-4 h-4"></div>
+                <span>Summarizing...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <span>Summarize</span>
+              </>
+            )}
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || !title.trim() || !content.trim()}
+            className="btn-primary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-blue-600 transition-colors w-full sm:w-auto"
+          >
+            {isSubmitting ? (
+              <span className="animate-pulse">Saving...</span>
+            ) : (
+              'Save Note'
+            )}
+          </button>
         </div>
       </form>
     </div>
