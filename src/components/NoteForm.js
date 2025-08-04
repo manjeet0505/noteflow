@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import useVoiceToText from '../hooks/useVoiceToText'
 
+
 export default function NoteForm({ onAddNote }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -20,9 +21,12 @@ export default function NoteForm({ onAddNote }) {
   const [selectedLanguage, setSelectedLanguage] = useState('')
 
   // Voice-to-Text hook
+  const [voiceTarget, setVoiceTarget] = useState('content') // 'content' or 'title'
+  const [interimVoice, setInterimVoice] = useState('')
   const {
     isListening,
     transcript,
+    interimTranscript,
     error: voiceError,
     isSupported,
     startListening,
@@ -30,7 +34,18 @@ export default function NoteForm({ onAddNote }) {
     clearTranscript,
     appendToText,
     cleanup
-  } = useVoiceToText()
+  } = useVoiceToText((liveText, { interim, final }) => {
+    setInterimVoice(interim)
+    if (voiceTarget === 'content') {
+      if (final) {
+        setContent(prev => (prev.trim() ? prev + ' ' : '') + final.trim())
+      }
+    } else if (voiceTarget === 'title') {
+      if (final) {
+        setTitle(prev => (prev.trim() ? prev + ' ' : '') + final.trim())
+      }
+    }
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -53,28 +68,25 @@ export default function NoteForm({ onAddNote }) {
   }
 
   // Handle voice recording
+  // Voice input for content
   const handleVoiceToggle = () => {
     if (isListening) {
       stopListening()
-      // Append transcript to content when stopping
-      if (transcript.trim()) {
-        setContent(prev => appendToText(prev))
-        clearTranscript()
-      }
+      clearTranscript()
+      setInterimVoice('')
     } else {
+      setVoiceTarget('content')
       startListening()
     }
   }
-
-  // Handle voice input for title
+  // Voice input for title
   const handleVoiceTitle = () => {
     if (isListening) {
       stopListening()
-      if (transcript.trim()) {
-        setTitle(prev => appendToText(prev))
-        clearTranscript()
-      }
+      clearTranscript()
+      setInterimVoice('')
     } else {
+      setVoiceTarget('title')
       startListening()
     }
   }
@@ -243,7 +255,7 @@ export default function NoteForm({ onAddNote }) {
             <input
               type="text"
               id="title"
-              value={title}
+              value={isListening && voiceTarget === 'title' ? title + (interimVoice ? ' ' + interimVoice : '') : title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter note title..."
               className="w-full px-4 py-3 bg-white/15 border border-white/30 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 focus:border-white/50 transition-all duration-200 pr-12"
@@ -294,7 +306,7 @@ export default function NoteForm({ onAddNote }) {
           <div className="relative">
             <textarea
               id="content"
-              value={content + (isListening && transcript ? ' ' + transcript : '')}
+              value={isListening && voiceTarget === 'content' ? content + (interimVoice ? ' ' + interimVoice : '') : content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note content here... or use voice input"
               rows={4}

@@ -2,14 +2,18 @@
 
 import { useState, useRef, useCallback } from 'react'
 
-export default function useVoiceToText() {
+export default function useVoiceToText(onTranscriptChange) {
+  // onTranscriptChange: function(text, { interim, final })
+
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
+  const [interimTranscript, setInterimTranscript] = useState('')
   const [error, setError] = useState('')
   const [isSupported, setIsSupported] = useState(true)
   
   const recognitionRef = useRef(null)
   const timeoutRef = useRef(null)
+  const finalizedTranscriptRef = useRef('') // Track what has already been appended
 
   // Initialize speech recognition
   const initializeRecognition = useCallback(() => {
@@ -38,26 +42,36 @@ export default function useVoiceToText() {
     }
 
     recognition.onresult = (event) => {
-      let finalTranscript = ''
-      let interimTranscript = ''
+      let newFinal = ''
+      let newInterim = ''
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcriptPart = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          finalTranscript += transcriptPart
+          newFinal += transcriptPart
         } else {
-          interimTranscript += transcriptPart
+          newInterim += transcriptPart
         }
       }
 
-      setTranscript(prev => prev + finalTranscript)
-      
-      // Reset timeout for continuous listening
+      // Only append new final transcript
+      if (newFinal) {
+        finalizedTranscriptRef.current += newFinal
+        setTranscript(finalizedTranscriptRef.current)
+        setInterimTranscript('')
+        if (typeof onTranscriptChange === 'function') {
+          onTranscriptChange(finalizedTranscriptRef.current, { interim: '', final: newFinal })
+        }
+      } else {
+        setInterimTranscript(newInterim)
+        if (typeof onTranscriptChange === 'function') {
+          onTranscriptChange(finalizedTranscriptRef.current + newInterim, { interim: newInterim, final: '' })
+        }
+      }
+      // Reset silence timeout on any result
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
-      
-      // Auto-stop after 3 seconds of silence
       timeoutRef.current = setTimeout(() => {
         if (recognitionRef.current && isListening) {
           stopListening()
@@ -91,14 +105,14 @@ export default function useVoiceToText() {
       setError('Speech recognition is not supported in this browser')
       return
     }
-
     try {
       if (!recognitionRef.current) {
         recognitionRef.current = initializeRecognition()
       }
-
       if (recognitionRef.current && !isListening) {
         setTranscript('')
+        setInterimTranscript('')
+        finalizedTranscriptRef.current = ''
         setError('')
         recognitionRef.current.start()
       }
@@ -110,18 +124,21 @@ export default function useVoiceToText() {
 
   // Stop listening
   const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current) {
       recognitionRef.current.stop()
     }
-    
+    setIsListening(false)
+    setInterimTranscript('')
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
-  }, [isListening])
+  }, [])
 
   // Clear transcript
   const clearTranscript = useCallback(() => {
     setTranscript('')
+    setInterimTranscript('')
+    finalizedTranscriptRef.current = ''
     setError('')
   }, [])
 
@@ -148,6 +165,7 @@ export default function useVoiceToText() {
   return {
     isListening,
     transcript,
+    interimTranscript,
     error,
     isSupported,
     startListening,
