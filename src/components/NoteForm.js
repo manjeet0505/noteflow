@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import useVoiceToText from '../hooks/useVoiceToText'
 
 
 export default function NoteForm({ onAddNote }) {
@@ -20,32 +19,6 @@ export default function NoteForm({ onAddNote }) {
   const [showLanguageModal, setShowLanguageModal] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('')
 
-  // Voice-to-Text hook
-  const [voiceTarget, setVoiceTarget] = useState('content') // 'content' or 'title'
-  const [interimVoice, setInterimVoice] = useState('')
-  const {
-    isListening,
-    transcript,
-    interimTranscript,
-    error: voiceError,
-    isSupported,
-    startListening,
-    stopListening,
-    clearTranscript,
-    appendToText,
-    cleanup
-  } = useVoiceToText((liveText, { interim, final }) => {
-    setInterimVoice(interim)
-    if (voiceTarget === 'content') {
-      if (final) {
-        setContent(prev => (prev.trim() ? prev + ' ' : '') + final.trim())
-      }
-    } else if (voiceTarget === 'title') {
-      if (final) {
-        setTitle(prev => (prev.trim() ? prev + ' ' : '') + final.trim())
-      }
-    }
-  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -67,36 +40,7 @@ export default function NoteForm({ onAddNote }) {
     }
   }
 
-  // Handle voice recording
-  // Voice input for content
-  const handleVoiceToggle = () => {
-    if (isListening) {
-      stopListening()
-      clearTranscript()
-      setInterimVoice('')
-    } else {
-      setVoiceTarget('content')
-      startListening()
-    }
-  }
-  // Voice input for title
-  const handleVoiceTitle = () => {
-    if (isListening) {
-      stopListening()
-      clearTranscript()
-      setInterimVoice('')
-    } else {
-      setVoiceTarget('title')
-      startListening()
-    }
-  }
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      cleanup()
-    }
-  }, [cleanup])
 
   // Handle AI features (rewrite, translate, improve)
   const handleAiAction = async (action) => {
@@ -255,28 +199,13 @@ export default function NoteForm({ onAddNote }) {
             <input
               type="text"
               id="title"
-              value={isListening && voiceTarget === 'title' ? title + (interimVoice ? ' ' + interimVoice : '') : title}
+              value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter note title..."
               className="w-full px-4 py-3 bg-white/15 border border-white/30 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 focus:border-white/50 transition-all duration-200 pr-12"
               required
             />
-            {isSupported && (
-              <button
-                type="button"
-                onClick={handleVoiceTitle}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-2 rounded-lg transition-all duration-200 ${
-                  isListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-                }`}
-                title={isListening ? 'Stop recording' : 'Start voice input for title'}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </button>
-            )}
+
           </div>
         </div>
 
@@ -285,71 +214,21 @@ export default function NoteForm({ onAddNote }) {
             <label htmlFor="content" className="block text-sm font-medium text-white/90">
               Content
             </label>
-            {isSupported && (
-              <button
-                type="button"
-                onClick={handleVoiceToggle}
-                className={`flex items-center space-x-2 px-3 py-1 rounded-lg text-sm transition-all duration-200 ${
-                  isListening
-                    ? 'bg-red-500 text-white animate-pulse'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
-                }`}
-                title={isListening ? 'Stop recording' : 'Start voice input'}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-                <span>{isListening ? 'Stop Recording' : 'Voice Input'}</span>
-              </button>
-            )}
+
           </div>
           <div className="relative">
             <textarea
               id="content"
-              value={isListening && voiceTarget === 'content' ? content + (interimVoice ? ' ' + interimVoice : '') : content}
+              value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note content here... or use voice input"
               rows={4}
               className="w-full px-4 py-3 bg-white/15 border border-white/30 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 focus:border-white/50 transition-all duration-200 resize-none"
               required
             />
-            {isListening && (
-              <div className="absolute bottom-3 right-3 flex items-center space-x-2 bg-red-500/20 backdrop-blur-sm px-3 py-1 rounded-lg">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-red-200 text-xs font-medium">Listening...</span>
-              </div>
-            )}
+
           </div>
 
-          {/* Voice Error Display */}
-          {voiceError && (
-            <div className="mt-2 bg-red-500/20 border border-red-500/30 text-red-200 px-3 py-2 rounded-lg backdrop-blur-sm">
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-xs">{voiceError}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Voice Instructions */}
-          {isSupported && !voiceError && (
-            <div className="mt-2 text-white/50 text-xs">
-              Tip: Click "Voice Input" to dictate your notes. Speech will automatically stop after 3 seconds of silence.
-            </div>
-          )}
-
-          {!isSupported && (
-            <div className="mt-2 bg-yellow-500/20 border border-yellow-500/30 text-yellow-200 px-3 py-2 rounded-lg backdrop-blur-sm">
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <span className="text-xs">Voice input is not supported in this browser. Try Chrome or Edge for the best experience.</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* AI Features Section - Always visible when content exists */}
