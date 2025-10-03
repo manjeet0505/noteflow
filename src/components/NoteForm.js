@@ -23,16 +23,21 @@ export default function NoteForm({ onAddNote }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!title.trim() || !content.trim()) {
+    const effectiveContent = (content && content.trim()) || (aiResult && aiResult.trim()) || ''
+    const effectiveTitle = title.trim() || (effectiveContent.split('\n')[0].slice(0, 60) || 'Untitled Note')
+
+    if (!effectiveContent) {
       return
     }
 
     setIsSubmitting(true)
     try {
-      await onAddNote({ title: title.trim(), content: content.trim() })
+      await onAddNote({ title: effectiveTitle, content: effectiveContent })
       setTitle('')
       setContent('')
       setSummary('') // Clear summary when creating new note
+      setAiResult('')
+      setCurrentAiAction('')
     } catch (error) {
       console.error('Error creating note:', error)
     } finally {
@@ -203,7 +208,6 @@ export default function NoteForm({ onAddNote }) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter note title..."
               className="w-full px-4 py-3 bg-white/15 border border-white/30 text-white placeholder-white/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white/20 focus:border-white/50 transition-all duration-200 pr-12"
-              required
             />
 
           </div>
@@ -425,7 +429,7 @@ export default function NoteForm({ onAddNote }) {
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || !title.trim() || !content.trim()}
+            disabled={isSubmitting || (!content.trim() && !aiResult.trim())}
             className="btn-primary flex items-center justify-center px-4 py-2 rounded-lg text-white shadow-md hover:bg-blue-600 transition-colors w-full sm:w-auto"
           >
             {isSubmitting ? (

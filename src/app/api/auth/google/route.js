@@ -50,38 +50,46 @@ export async function POST(request) {
       sub: userInfo.sub
     })
     
-    const { email, name, picture, sub: googleId } = userInfo
+    const email = (userInfo.email || '').toLowerCase()
+    const name = userInfo.name || 'Google User'
+    const picture = userInfo.picture || ''
+    const googleId = userInfo.sub
+
+    if (!email) {
+      console.log('❌ Google user info missing email')
+      return NextResponse.json(
+        { success: false, error: 'Google account missing email scope' },
+        { status: 400 }
+      )
+    }
     
     // Check if user exists
     let user = await User.findOne({
       $or: [
-        { email: email.toLowerCase() },
+        { email: email },
         { googleId: googleId }
       ]
     })
     
     if (user) {
       console.log('👤 Existing user found:', user.email)
-      
-      // Update user with Google info if they don't have it
-      if (!user.googleId) {
-        console.log('🔄 Updating existing user with Google info')
-        user.googleId = googleId
-        user.googleEmail = email.toLowerCase()
-        user.avatar = picture
-        user.authMethod = 'google'
-        await user.save()
-      }
+      // Always refresh Google info on login
+      user.name = name
+      user.googleId = googleId
+      user.googleEmail = email
+      if (picture) user.avatar = picture
+      user.authMethod = 'google'
+      await user.save()
     } else {
       console.log('👤 Creating new user with Google OAuth')
       
       // Create new user
       user = new User({
         name,
-        email: email.toLowerCase(),
+        email,
         googleId,
-        googleEmail: email.toLowerCase(),
-        avatar: picture,
+        googleEmail: email,
+        avatar: picture || undefined,
         authMethod: 'google'
       })
       
@@ -114,7 +122,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Google OAuth error:', error)
     
-    if (error.message.includes('Invalid token')) {
+    if (error.message && error.message.includes('Invalid token')) {
       return NextResponse.json(
         { success: false, error: 'Invalid Google token' },
         { status: 401 }

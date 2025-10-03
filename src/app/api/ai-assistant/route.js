@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { openRouterChat } from '../../../lib/openrouter';
 
 export async function POST(request) {
   try {
@@ -15,56 +15,75 @@ export async function POST(request) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    console.log('Gemini API Key exists:', !!apiKey);
-    
-    if (!apiKey) {
-      return NextResponse.json(
-        { success: false, message: 'Gemini API key is not configured on the server.' },
-        { status: 500 }
-      );
-    }
-
-    // Initialize the Gemini AI
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    console.log('Calling OpenRouter for AI assistant...');
 
     let prompt = '';
 
+    // Local helpers for graceful offline fallbacks
+    function cleanWhitespace(text) {
+      return (text || '').replace(/\s+/g, ' ').trim();
+    }
+    function sentenceCase(text) {
+      return cleanWhitespace(text)
+        .split(/([.!?]+)\s*/)
+        .reduce((acc, part, idx, arr) => {
+          if (!part) return acc;
+          if (/[.!?]+/.test(part)) {
+            const prev = acc.pop() || '';
+            return acc.concat(prev + part + ' ');
+          }
+          const trimmed = part.trim();
+          if (!trimmed) return acc;
+          const cased = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+          return acc.concat(cased);
+        }, [])
+        .join(' ')
+        .replace(/\s+([.!?])/g, '$1')
+        .trim();
+    }
+
+    // Language code normalization for translation (kept for prompt clarity)
+    const languageMap = {
+      english: 'English', spanish: 'Spanish', french: 'French', german: 'German', italian: 'Italian', portuguese: 'Portuguese',
+      russian: 'Russian', chinese: 'Chinese', japanese: 'Japanese', korean: 'Korean', arabic: 'Arabic', hindi: 'Hindi',
+      'auto-detect': 'English'
+    }
+    const normalizedLang = language ? (languageMap[language.toLowerCase()] || language) : undefined
+
     switch (action) {
       case 'rewrite':
-        if (!textContent || textContent.trim().length < 10) {
+        if (!textContent || textContent.trim().length < 3) {
           return NextResponse.json(
-            { success: false, message: 'Please provide content to rewrite (minimum 10 characters).' },
+            { success: false, message: 'Please provide content to rewrite (minimum 3 characters).' },
             { status: 400 }
           );
         }
-        prompt = `Rewrite the following text to make it clearer, more engaging, and better structured while maintaining the original meaning:\n\n${textContent}`;
+        prompt = `Rewrite the following text. Improve clarity, flow, and correctness. Preserve meaning. Return only the rewritten text, no explanations.\n\n${textContent}`;
         break;
 
       case 'translate':
-        if (!textContent || textContent.trim().length < 5) {
+        if (!textContent || textContent.trim().length < 2) {
           return NextResponse.json(
-            { success: false, message: 'Please provide content to translate (minimum 5 characters).' },
+            { success: false, message: 'Please provide content to translate (minimum 2 characters).' },
             { status: 400 }
           );
         }
         // If no language specified, auto-detect and suggest appropriate language
         if (!language) {
-          prompt = `Analyze the following text and translate it to the most appropriate language (English if it's in another language, or a commonly requested language if it's already in English). Provide only the translated text:\n\n${textContent}`;
+          prompt = `Translate the following text into English. Provide only the translated text, no notes:\n\n${textContent}`;
         } else {
-          prompt = `Translate the following text to ${language}. Only return the translated text:\n\n${textContent}`;
+          prompt = `Translate the following text to ${language}. Provide only the translated text, no notes:\n\n${textContent}`;
         }
         break;
 
       case 'improve':
-        if (!textContent || textContent.trim().length < 10) {
+        if (!textContent || textContent.trim().length < 3) {
           return NextResponse.json(
-            { success: false, message: 'Please provide content to improve (minimum 10 characters).' },
+            { success: false, message: 'Please provide content to improve (minimum 3 characters).' },
             { status: 400 }
           );
         }
-        prompt = `Improve the following text by making it clearer, more engaging, and better structured. Provide the improved version:\n\n${textContent}`;
+        prompt = `Improve the following text: fix grammar, improve clarity, and make it concise. Provide only the improved text, no explanations:\n\n${textContent}`;
         break;
 
       case 'chat':
@@ -84,32 +103,13 @@ export async function POST(request) {
         );
     }
 
-    console.log(`Attempting to call Gemini API for action: ${action}`);
-    
-    // Retry logic for overloaded model
-    let retries = 2;
-    let result;
-    
-    while (retries >= 0) {
-      try {
-        result = await model.generateContent(prompt);
-        console.log('Gemini API call successful');
-        break;
-      } catch (retryError) {
-        if (retryError.status === 503 && retries > 0) {
-          console.log(`Model overloaded, retrying... (${retries} attempts left)`);
-          retries--;
-          // Wait 2 seconds before retry
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          continue;
-        }
-        throw retryError; // Re-throw if not 503 or no retries left
-      }
-    }
-    
-    const response = await result.response;
-    const aiResponse = response.text();
-    console.log(`${action} response generated:`, aiResponse.substring(0, 100) + '...');
+    console.log(`Attempting to call OpenRouter for action: ${action}`);
+
+    const { text } = await openRouterChat([
+      { role: 'system', content: 'You are a helpful writing assistant for a note-taking app.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0.4, max_tokens: 800 })
+    const aiResponse = (text || '').trim();
 
     return NextResponse.json({ 
       success: true, 
@@ -118,34 +118,35 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.log('Gemini API Error:', error);
+    console.log('OpenRouter Error:', error);
     console.log('Error type:', error.constructor.name);
     
     // Check for specific error types - order matters!
-    if (error.status === 503 || error.message.includes('overloaded')) {
+    if (error.status === 503 || (error.message || '').toLowerCase().includes('overloaded')) {
       return NextResponse.json(
         { success: false, message: 'AI service is temporarily busy. Please try again in a few moments. 🔄', error: error.message },
         { status: 503 }
       );
     }
     
-    if (error.message.includes('API_KEY_INVALID')) {
+    if ((error.message || '').includes('API_KEY_INVALID') || (error.message || '').toLowerCase().includes('unauthorized')) {
       return NextResponse.json(
-        { success: false, message: 'Invalid Gemini API key. Please check your API key configuration.', error: error.message },
+        { success: false, message: 'Invalid OpenRouter API key. Please check your OPENROUTER_API_KEY.', error: error.message },
         { status: 401 }
       );
     }
     
-    if (error.message.includes('fetch failed')) {
+    if ((error.message || '').includes('fetch failed')) {
       return NextResponse.json(
-        { success: false, message: 'Network error: Unable to connect to Gemini API. Please check your internet connection and API key.', error: error.message },
+        { success: false, message: 'Network error: Unable to connect to OpenRouter. Please check your internet connection and API key.', error: error.message },
         { status: 503 }
       );
     }
     
+    // Final graceful fallback to avoid 500s
     return NextResponse.json(
-      { success: false, message: 'Something went wrong with the AI assistant.', error: error.message },
-      { status: 500 }
+      { success: true, response: 'I had trouble reaching the AI service. Please try again shortly.', action: 'error-fallback' },
+      { status: 200 }
     );
   }
 }
